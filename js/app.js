@@ -28,13 +28,28 @@ function agregarGasto(e){
     e.preventDefault(); // ya que es un evento submit
 
     const nombre = document.querySelector('#gasto').value;
-    const cantidad = document.querySelector('#cantidad').value;
+    const cantidad = Number(document.querySelector('#cantidad').value);
     
     if(nombre === '' || cantidad === '')
         ui.imprimirAlerta('Ambos campos son obligatorios', 'error');
     else if (cantidad <= 0 || isNaN(cantidad)){
         ui.imprimirAlerta('Cantidad no valida', 'error');
     }
+
+    const gasto = {nombre,cantidad,id: Date.now()};
+    presupuesto.nuevoGasto( gasto );
+
+    // mensaje de confirmacion
+    ui.imprimirAlerta('Gasto agregado correctamente');
+
+    // imprimir los gastos
+    const {gastos, restante} = presupuesto;
+
+    ui.AgregarGastoListado( gastos );
+    ui.actualizarRestante( restante );
+
+    formulario.reset();
+    
 }
 
 // Clases
@@ -46,14 +61,25 @@ class Presupuesto{
         this.restante = Number(presupuesto);
         this.gastos = [];
     }
+
+    nuevoGasto( gasto ){
+        this.gastos = [...this.gastos, gasto];
+        this.calcularRestante();
+    }
+
+    calcularRestante(){
+        const gastado = this.gastos.reduce( (total,gasto) => total + gasto.cantidad, 0 );
+        this.restante = this.presupuesto - gastado;
+    }
 }
 
 class UI{
+
     insertarPresupuesto( cantidad ){
         const {presupuesto, restante } = cantidad;
 
         document.querySelector('#total').textContent = presupuesto;  
-        document.querySelector('#restante').textContent = restante;
+         
     }
 
     imprimirAlerta(mensaje,tipo){
@@ -74,6 +100,40 @@ class UI{
         setTimeout(() => {
             divAlerta.remove();
         }, 3000);
+
+       
+    }
+
+    AgregarGastoListado( gastos ){
+        this.limpiarHTML();
+
+        gastos.forEach(gasto => {
+            const {cantidad, nombre, id } = gasto;
+
+            const nuevoGasto = document.createElement('li');
+            nuevoGasto.className = 'list-group-item d-flex justify-content-between align-items-center';
+            nuevoGasto.dataset.id = id;
+
+            nuevoGasto.innerHTML = `${nombre} <span class = "badge badge-primary badge-pill"> ${cantidad} </span>`;
+
+            const btnBorrar = document.createElement('button');
+            btnBorrar.classList.add('btn','btn-danger','borrar-gasto');
+            btnBorrar.innerHTML = 'Borrar &times';
+
+            nuevoGasto.appendChild(btnBorrar);
+
+            gastoListado.appendChild(nuevoGasto);
+        });
+    }
+
+    actualizarRestante( restante ){
+        document.querySelector('#restante').textContent = restante;
+    }
+
+    limpiarHTML(){
+        while( gastoListado.firstChild ){
+            gastoListado.removeChild( gastoListado.firstChild );
+        }
     }
 }
 
